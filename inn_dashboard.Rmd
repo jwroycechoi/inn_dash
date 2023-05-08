@@ -1,0 +1,63 @@
+---
+title: "INN Dashboard Sample"
+runtime: shiny
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+---
+
+
+```{r setup, include=FALSE}
+library(shiny)
+library(plotly)
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(tmap)
+library(pals)
+library(ggplot2)
+library(RColorBrewer)
+
+# Define the list of available metros
+lookup <- c(1920, 1600, 8840)
+names(lookup) <- c("Dallas", "Chicago", "Washington D.C.")
+
+# Read in data and subset for the selected area
+full_mapdat <- qs::qread("data/mapdat.qs")
+full_mbisum <- qs::qread("data/mbi_summary.qs")
+msa <- qs::qread("data/msa.qs")
+
+metro <- reactive({
+  inner_join(full_mapdat, msa,  by = c("zcta" = "zip")) %>% 
+    filter(msa == input$msacode)
+})
+
+```
+
+Sidebar {.sidebar}
+=================================================
+
+### Local News Market Clusters
+
+The clusters are based on various set of demographic, socioeconomic status variables at the zip code level. Please select a metropolitan area from below.
+
+```{r}
+# Define metro area
+selectInput("msacode", label = "Select a metropolitan area", choices = lookup,
+            selected = 1600)
+```
+
+Explore Clusters
+=================================================
+
+Row
+-------------------------------------------------
+
+### Map
+
+```{r}
+
+
+```
+
+
