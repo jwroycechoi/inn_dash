@@ -7,7 +7,7 @@ output:
 ---
 
 
-```{r setup, include=FALSE}
+```{r global, include=FALSE}
 library(shiny)
 library(plotly)
 library(tidyverse)
@@ -23,14 +23,27 @@ lookup <- c(1920, 1600, 8840)
 names(lookup) <- c("Dallas", "Chicago", "Washington D.C.")
 
 # Read in data and subset for the selected area
-full_mapdat <- qs::qread("data/mapdat.qs")
 full_mbisum <- qs::qread("data/mbi_summary.qs")
 msa <- qs::qread("data/msa.qs")
+full_mapdat <- qs::qread("data/mapdat.qs") %>% 
+  inner_join(., msa, by = c("zcta" = "zip")) %>% 
+  st_transform("+proj=longlat +datum=WGS84")
 
-metro <- reactive({
-  inner_join(full_mapdat, msa,  by = c("zcta" = "zip")) %>% 
-    filter(msa == input$msacode)
-})
+# Define colors for mapping
+set.seed(12345)
+alphabet_pal <- alphabet()
+newPal <- grDevices::colorRampPalette(colors = alphabet_pal)(25)
+names(newPal) <- levels(factor(full_mapdat$myclus))
+factpal <- colorFactor(newPal, full_mapdat$myclus)
+
+# Define map popup labels
+full_mapdat$labels <- paste0(
+  "<strong> ZIP: </strong> ",
+  full_mapdat$zcta, "<br/>",
+  "<strong> Cluster: </strong> ",
+  full_mapdat$myclus, "<br/>"
+) %>% 
+  lapply(HTML)
 
 ```
 
@@ -56,8 +69,81 @@ Row
 ### Map
 
 ```{r}
+# Reactive subset
+sub_mapdat <- reactive({
+  full_mapdat %>% 
+    filter(msa == input$msacode)
+})
+
+# Generating the map
+output$map <- renderLeaflet({
+  map <- leaflet(sub_mapdat()) %>% 
+    addProviderTiles("CartoDB.Positron") %>% 
+    clearShapes() %>% 
+    addPolygons(stroke = F, smoothFactor = 0.2,
+                fillOpacity = 0.7, color = ~factpal(myclus),
+                layerId = ~zcta,
+                popup = ~labels) %>% 
+    addLegend(position = "bottomright", pal = factpal,
+              values = ~myclus, title = "Clusters")
+  
+  map
+})
+
+# Click event for the map (used to generate table/chart)
+click_zip <- eventReactive(input$map_shape_click, {
+  x <- input$map_shape_click
+  
+  y <- y$id
+  
+  return(y)
+})
+
+zip_ids <- reactive({
+  eventdata <- event_data("plotly_selected", source = "source")
+  if (is.null(eventdata)) {
+    return(NULL) # do nothing
+  } else {
+    zips <- eventdata$key
+    return(zips)
+  }
+})
+
+observe({
+  req(zip_ids())
+  
+  proxy <- leafletProxy("map")
+  
+  sub <- filter(sub_mapdat(), zcta %in% zip_ids())
+  
+  box <- st_bbox(sub) %>% as.vector()
+  
+  # Clear old selection on map, and add new selection
+  proxy %>% 
+    clearGroup(group = "sub") %>% 
+    addPolygons(data = sub, fill = F, color = "#FFFF00",
+                opacity = 1, group = "sub", weight = 1.5) %>% 
+    fitBounds(lng1 = box[1],
+              lat1 = box[2],
+              lng2 = box[3],
+              lat2 = box[4])
+})
+
+observeEvent(click_zip(), {
+  # Add the clicked zip to the map in aqua, and remove when a new one is clicked
+  map <- leafletProxy("map") %>% 
+    removeShape("htract") %>% 
+    addPolygons(data = filter(sub_mapdat(), zcta == click_zip()), fill = F,
+                color = "#00FFFF", opacity = 1, layerId = "htract",
+                weight = 1.6)
+})
+
+
+
+leafletOutput("map")
+
+
 
 
 ```
-
 
