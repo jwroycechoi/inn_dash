@@ -1,0 +1,189 @@
+---
+title: "INN Dash Snapshot"
+output: flexdashboard::flex_dashboard
+---
+
+```{r global, include=FALSE}
+library(shiny)
+library(plotly)
+library(tidyverse)
+library(sf)
+library(leaflet)
+library(tmap)
+library(pals)
+library(ggplot2)
+library(RColorBrewer)
+library(DT)
+library(highcharter)
+
+# # Define the list of available metros
+# lookup <- c(1920, 1600, 8840)
+# names(lookup) <- c("Dallas", "Chicago", "Washington D.C.")
+
+# Read in data and subset for the selected area
+full_mbisum <- qs::qread("../data/mbi_summary.qs")
+msa <- qs::qread("../data/msa.qs")
+us_mapdat <- qs::qread("../data/mapdat.qs") %>% 
+  mutate(metro_group = str_extract(myclus, "\\d")) %>% 
+  st_transform("+proj=longlat +datum=WGS84")
+full_mapdat <- qs::qread("../data/mapdat.qs") %>% 
+  inner_join(., msa, by = c("zcta" = "zip")) %>% 
+  mutate(metro_group = str_extract(myclus, "\\d")) %>% 
+  st_transform("+proj=longlat +datum=WGS84")
+
+# Summary dataset for bar charts
+sub <- us_mapdat %>% filter(zcta == "60202") %>% st_drop_geometry()
+
+metro_race <- us_mapdat %>% st_drop_geometry() %>%  group_by(metro_group) %>% summarise(across(starts_with("race") & ends_with("2021"), ~ round(mean(.x, na.rm = T), 1))) %>% filter(metro_group == "1")
+
+clus_race <- us_mapdat %>% st_drop_geometry() %>% group_by(myclus) %>% summarise(across(starts_with("race") & ends_with("2021"), ~ round(mean(.x, na.rm = T), 1))) %>% filter(myclus == "1M")
+
+metro_edu <- us_mapdat %>% st_drop_geometry() %>% group_by(metro_group) %>% summarise(across(c(lessthan9_2021, highschool_2021, college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1))) %>% filter(metro_group == "1")
+
+clus_edu <- us_mapdat %>% st_drop_geometry() %>% group_by(myclus) %>% summarise(across(c(lessthan9_2021, highschool_2021, college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1))) %>% filter(myclus == "1M")
+
+# Define colors for mapping
+set.seed(12345)
+alphabet_pal <- alphabet()
+newPal <- grDevices::colorRampPalette(colors = alphabet_pal)(25)
+names(newPal) <- levels(factor(full_mapdat$myclus))
+factpal <- colorFactor(newPal, full_mapdat$myclus)
+
+# Define map popup labels
+full_mapdat$labels <- paste0(
+  "<strong> ZIP: </strong> ",
+  full_mapdat$zcta, "<br/>",
+  "<strong> Cluster: </strong> ",
+  full_mapdat$myclus, "<br/>",
+  "<strong> Population: </strong> ",
+  full_mapdat$pop_2021,
+  "<strong> Income: </strong> $ ",
+  full_mapdat$medHHincome_2021
+) %>% 
+  lapply(HTML)
+
+us_mapdat$labels <- paste0(
+  "<strong> ZIP: </strong> ",
+  us_mapdat$zcta, "<br/>",
+  "<strong> Cluster: </strong> ",
+  us_mapdat$myclus, "<br/>",
+  "<strong> Population: </strong> ",
+  us_mapdat$pop_2021,
+  "<strong> Income: </strong> $ ",
+  us_mapdat$medHHincome_2021
+) %>% 
+  lapply(HTML)
+
+```
+
+Column {data-width=600}
+------------------------------
+
+### Map
+
+
+```{r}
+# Create map
+leaflet(full_mapdat) %>% 
+  addProviderTiles("CartoDB.Positron") %>% 
+  addPolygons(fillColor = ~factpal(myclus),
+              stroke = F, smoothFactor = 0.2,
+              fillOpacity = 0.7,
+              label = ~labels,
+              highlight = highlightOptions(
+                color = "cyan",
+                bringToFront = T
+              )) %>% 
+  addLegend(pal = factpal, values = ~myclus, title = "Segments",
+            opacity = 0.7)
+
+```
+
+### Table
+
+```{r}
+# Data Table
+dttest <- full_mapdat %>% filter(msa == "8840") %>% 
+  select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% st_drop_geometry() %>% 
+  mutate(across(c(starts_with("bbsub"), popPctCh, dv_onlycell), ~ .x / 100))
+  
+datatable(dttest, rownames = F, colnames = c("Zip Code", "Segment", "Income", "Population Change", "No Broadband Subscription",
+                                                 "Only Mobile Broadband Subscriptions", "Only Smartphone"),
+          options = list(pageLength = 10)) %>% 
+  formatPercentage(4:7) %>% DT::formatCurrency(3, digits = 0)
+
+```
+
+Column {data-width=400}
+----------------------------
+
+### Race
+
+```{r}
+# Grouped barchart
+
+
+chart <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_xAxis(categories = c("White", "Black", "Hispanic", "Asian", "Native", "Pacific-Islander", "Other"),
+           title = list(text = 'Race/ethnicity')) %>% 
+  hc_yAxis(title = list(text = "%")) %>% 
+  hc_plotOptions(series = list(dataLabels = list(enabled = T))) %>% 
+  hc_add_series(name = "Zip = 60202", data = c(sub$race_white_2021,
+                                               sub$race_black_2021,
+                                               sub$race_hisp_2021,
+                                               sub$race_asian_2021,
+                                               sub$race_native_2021,
+                                               sub$race_pacific_2021,
+                                               sub$race_other_2021)) %>% 
+  hc_add_series(name = "Metro Group", data = c(metro_race$race_white_2021,
+                                               metro_race$race_black_2021,
+                                               metro_race$race_hisp_2021,
+                                               metro_race$race_asian_2021,
+                                               metro_race$race_native_2021,
+                                               metro_race$race_pacific_2021,
+                                               metro_race$race_other_2021)) %>% 
+  hc_add_series(name = "Segment = 1M", data = c(clus_race$race_white_2021,
+                                               clus_race$race_black_2021,
+                                               clus_race$race_hisp_2021,
+                                               clus_race$race_asian_2021,
+                                               clus_race$race_native_2021,
+                                               clus_race$race_pacific_2021,
+                                               clus_race$race_other_2021)) %>% 
+  hc_add_theme(hc_theme_smpl()) %>% 
+  hc_tooltip(enabled = F)
+chart
+
+```
+
+### Education
+
+```{r}
+# Grouped barchart
+
+
+chart <- highchart() %>% 
+  hc_chart(type = "column") %>% 
+  hc_xAxis(categories = c("Less than High", "Highschool", "Some College", "Bacehlor", "Post Graduate"),
+           title = list(text = 'Educational Level')) %>% 
+  hc_yAxis(title = list(text = "%")) %>% 
+  hc_plotOptions(series = list(dataLabels = list(enabled = T))) %>% 
+  hc_add_series(name = "Zip = 60202", data = c(sub$lessthan9_2021,
+                                               sub$highschool_2021,
+                                               sub$college_2021,
+                                               sub$bachelor_2021,
+                                               sub$graduate_2021)) %>% 
+  hc_add_series(name = "Metro Group", data = c(metro_edu$lessthan9_2021,
+                                               metro_edu$highschool_2021,
+                                               metro_edu$college_2021,
+                                               metro_edu$bachelor_2021,
+                                               metro_edu$graduate_2021)) %>% 
+  hc_add_series(name = "Segment = 1M", data = c(clus_edu$lessthan9_2021,
+                                               clus_edu$highschool_2021,
+                                               clus_edu$college_2021,
+                                               clus_edu$bachelor_2021,
+                                               clus_edu$graduate_2021)) %>% 
+  hc_add_theme(hc_theme_smpl()) %>% 
+  hc_tooltip(enabled = F)
+chart
+```
