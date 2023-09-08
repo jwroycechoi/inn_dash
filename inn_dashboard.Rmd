@@ -26,8 +26,11 @@ full_mapdat <- qs::qread("data/mapdat.qs") %>%
   left_join(., msa, by = c("zcta" = "zip")) %>% 
   mutate(metro_group = str_extract(myclus, "\\d")) %>% 
   st_transform("+proj=longlat +datum=WGS84")
+metro <- tigris::metro_divisions() %>% 
+  st_transform("+proj=longlat +datum=WGS84")
 
 # Define the list of available metros
+metrolookup <- sort(unique(na.omit(metro$NAME)))
 lookup <- sort(unique(na.omit(full_mapdat$statecode)))
 
 # Define colors for mapping
@@ -63,8 +66,9 @@ The segments are based on various set of demographic, socioeconomic status varia
 
 ```{r}
 # Define metro area
-selectInput("state", label = "Select a state", choices = lookup,
+selectInput("state", label = "Select a State", choices = lookup,
             selected = "IL")
+selectInput("metroname", label = "Select a Metro Area", choices = metrolookup)
 ```
 
 Explore Market Segments
@@ -82,73 +86,83 @@ sub_mapdat <- reactive({
     filter(statecode == input$state)
 })
 
-# Generating the map
+# Set up base map
 output$map <- renderLeaflet({
-  map <- leaflet(sub_mapdat()) %>% 
+  leaflet(sub_mapdat()) %>% 
     addProviderTiles("CartoDB.Positron") %>% 
     clearShapes() %>% 
     addPolygons(fillColor = ~factpal(myclus),
-                color = "grey90",
+                color = "white",
+                weight = 0.5,
                 smoothFactor = 0,
                 fillOpacity = 0.7,
                 layerId = ~zcta,
                 label = ~labels,
                 highlight = highlightOptions(
                   color = "cyan",
-                  bringToFront = T
-                )) %>% 
+                  bringToFront = T)) %>%
     addLegend(pal = factpal, values = ~myclus, title = "Segments")
-  
-  map
 })
+
+# # Generating the map
+# output$map <- renderLeaflet({
+#   map <- leaflet(sub_mapdat()) %>% 
+#     addProviderTiles("CartoDB.Positron") %>% 
+#     clearShapes() %>% 
+#     addPolygons(fillColor = ~factpal(myclus),
+#                 weight = 0.7,
+#                 smoothFactor = 0,
+#                 fillOpacity = 0.7,
+#                 layerId = ~zcta,
+#                 label = ~labels,
+#                 highlight = highlightOptions(
+#                   color = "cyan",
+#                   bringToFront = T)
+#                 ) %>% 
+#     addLegend(pal = factpal, values = ~myclus, title = "Segments")
+#   
+#   map
+# })
 
 # Click event for the map (used to generate table/chart)
 click_zip <- eventReactive(input$map_shape_click, {
-  
+
   x <- input$map_shape_click
-  
+
   y <- x$id
-  
+
   return(y)
 })
 
-zip_ids <- reactive({
-  eventdata <- event_data("plotly_selected", source = "source")
-  if (is.null(eventdata)) {
-    return(NULL) # do nothing
-  } else {
-    zips <- eventdata$key
-    return(zips)
-  }
-})
-
-observe({
-  req(zip_ids())
-  
+# Observe clicks
+observeEvent(input$map_shape_click, {
+  # Create reactive storing layerid of clicked zips
+  zip_ids <- reactive({
+    eventdata <- input$map_shape_click
+    if (is.null(eventdata)) {
+      return(NULL) # do nothing
+    } else {
+      zips <- eventdata$id
+      return(zips)
+    }
+  })
+  # Create leaflet proxy
   proxy <- leafletProxy("map")
-  
+  # Subset the clicked zipcode
   sub <- filter(sub_mapdat(), zcta %in% zip_ids())
-  
+  # Get boundaries for selected zip
   box <- st_bbox(sub) %>% as.vector()
   
   # Clear old selection on map, and add new selection
-  proxy %>% 
-    clearGroup(group = "sub") %>% 
+  proxy %>%
+    clearGroup(group = "sub") %>%
     addPolygons(data = sub, fill = F, color = "#FFFF00",
-                opacity = 1, group = "sub", weight = 1.5) %>% 
+                opacity = 1, group = "sub", weight = 5) %>%
     fitBounds(lng1 = box[1],
               lat1 = box[2],
               lng2 = box[3],
               lat2 = box[4])
-})
 
-observeEvent(click_zip(), {
-  # Add the clicked zip to the map in aqua, and remove when a new one is clicked
-  map <- leafletProxy("map") %>% 
-    removeShape("htract") %>% 
-    addPolygons(data = filter(sub_mapdat(), zcta == click_zip()), fill = F,
-                color = "red3", opacity = 1, layerId = "htract",
-                weight = 1.6)
 })
 
 zip_data <- reactive({
