@@ -12,12 +12,12 @@ library(plotly)
 library(tidyverse)
 library(sf)
 library(leaflet)
-library(tmap)
 library(pals)
-library(ggplot2)
 library(RColorBrewer)
 library(DT)
 library(highcharter)
+library(tigris)
+options(tigris_use_cache = T)
 
 # Read in data and subset for the selected area
 full_mbisum <- qs::qread("data/mbi_summary.qs")
@@ -25,12 +25,16 @@ msa <- qs::qread("data/msa.qs")
 full_mapdat <- qs::qread("data/mapdat.qs") %>% 
   left_join(., msa, by = c("zcta" = "zip")) %>% 
   mutate(metro_group = str_extract(myclus, "\\d")) %>% 
-  st_transform("+proj=longlat +datum=WGS84")
-metro <- tigris::metro_divisions() %>% 
-  st_transform("+proj=longlat +datum=WGS84")
+  st_transform("+proj=longlat +datum=WGS84") %>% 
+  st_simplify()
+  
+metroshape <- tigris::metro_divisions() %>% 
+  st_transform("+proj=longlat +datum=WGS84") %>% 
+  st_simplify()
+  
 
 # Define the list of available metros
-metrolookup <- sort(unique(na.omit(metro$NAME)))
+metrolookup <- sort(unique(na.omit(metroshape$NAME)))
 lookup <- sort(unique(na.omit(full_mapdat$statecode)))
 
 # Define colors for mapping
@@ -66,63 +70,66 @@ The segments are based on various set of demographic, socioeconomic status varia
 
 ```{r}
 # Define metro area
-selectInput("state", label = "Select a State", choices = lookup,
-            selected = "IL")
-selectInput("metroname", label = "Select a Metro Area", choices = metrolookup)
+# selectInput("state", label = "Select a State", choices = lookup,
+#             selected = "IL")
+selectInput("metroname", label = "Select a Metro Area", choices = metrolookup,
+            selected = "Chicago-Naperville-Evanston, IL")
 ```
 
 Explore Market Segments
 =================================================
 
-Column {data-width=600}
+Column
 -------------------------------------------------
 
 ### Map
 
 ```{r}
 # Reactive subset
+# sub_mapdat <- reactive({
+#   full_mapdat %>% 
+#     filter(statecode == input$state)
+# })
+
 sub_mapdat <- reactive({
-  full_mapdat %>% 
-    filter(statecode == input$state)
+  metroshape %>% 
+    filter(NAME == input$metroname)
 })
 
-# Set up base map
+# Create map
 output$map <- renderLeaflet({
-  leaflet(sub_mapdat()) %>% 
+  # Get the bounding box for the filtered data
+  bbox <- st_bbox(sub_mapdat()) %>% as.vector()
+  
+  # Create leaflet object
+  leaflet() %>% 
     addProviderTiles("CartoDB.Positron") %>% 
     clearShapes() %>% 
-    addPolygons(fillColor = ~factpal(myclus),
+    addPolygons(data = full_mapdat,
+                fillColor = ~factpal(myclus),
                 color = "white",
                 weight = 0.5,
                 smoothFactor = 0,
                 fillOpacity = 0.7,
                 layerId = ~zcta,
                 label = ~labels,
+                group = "fullclus",
                 highlight = highlightOptions(
                   color = "cyan",
                   bringToFront = T)) %>%
-    addLegend(pal = factpal, values = ~myclus, title = "Segments")
+    # addLegend(pal = factpal, values = full_mapdat$myclus, title = "Segments", group = "fullclus") %>% 
+    addPolygons(data = sub_mapdat(),
+                fill = F,
+                color = "black",
+                weight = 2) %>% 
+    fitBounds(lng1 = bbox[1],
+              lat1 = bbox[2],
+              lng2 = bbox[3],
+              lat2 = bbox[4])
+    # setView(lng = (bbox$xmin + bbox$xmax) / 2,  # Center of the bounding box
+    #         lat = (bbox$ymin + bbox$ymax) / 2,  # Center of the bounding box
+    #         zoom = 10)
 })
-
-# # Generating the map
-# output$map <- renderLeaflet({
-#   map <- leaflet(sub_mapdat()) %>% 
-#     addProviderTiles("CartoDB.Positron") %>% 
-#     clearShapes() %>% 
-#     addPolygons(fillColor = ~factpal(myclus),
-#                 weight = 0.7,
-#                 smoothFactor = 0,
-#                 fillOpacity = 0.7,
-#                 layerId = ~zcta,
-#                 label = ~labels,
-#                 highlight = highlightOptions(
-#                   color = "cyan",
-#                   bringToFront = T)
-#                 ) %>% 
-#     addLegend(pal = factpal, values = ~myclus, title = "Segments")
-#   
-#   map
-# })
 
 # Click event for the map (used to generate table/chart)
 click_zip <- eventReactive(input$map_shape_click, {
@@ -149,25 +156,25 @@ observeEvent(input$map_shape_click, {
   # Create leaflet proxy
   proxy <- leafletProxy("map")
   # Subset the clicked zipcode
-  sub <- filter(sub_mapdat(), zcta %in% zip_ids())
+  sub <- filter(full_mapdat, zcta %in% zip_ids())
   # Get boundaries for selected zip
-  box <- st_bbox(sub) %>% as.vector()
+  # box <- st_bbox(sub) %>% as.vector()
   
   # Clear old selection on map, and add new selection
   proxy %>%
     clearGroup(group = "sub") %>%
     addPolygons(data = sub, fill = F, color = "#FFFF00",
-                opacity = 1, group = "sub", weight = 5) %>%
-    fitBounds(lng1 = box[1],
-              lat1 = box[2],
-              lng2 = box[3],
-              lat2 = box[4])
+                opacity = 1, group = "sub", weight = 5)
+    # fitBounds(lng1 = box[1],
+    #           lat1 = box[2],
+    #           lng2 = box[3],
+    #           lat2 = box[4])
 
 })
 
 zip_data <- reactive({
   # Fetch data for the clicked zip
-  return(filter(sub_mapdat(), zcta == click_zip()))
+  return(filter(full_mapdat, zcta == click_zip()))
 })
 
 leafletOutput("map")
@@ -179,9 +186,31 @@ leafletOutput("map")
 ### Digital Profile Table
 
 ```{r}
+# Create reactive subset data
+metro_sub <- reactive({
+  bbox <- st_bbox(sub_mapdat(), crs = st_crs(full_mapdat))
+  metro_sub <- st_crop(full_mapdat, bbox)
+  return(metro_sub)
+})
+
+# output$dt <- renderDataTable({
+#   
+#   dt <- full_mapdat %>% 
+#     select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% 
+#     st_drop_geometry() %>% 
+#     mutate(across(c(starts_with("bbsub"), popPctCh, dv_onlycell), ~ .x / 100))
+#   
+#   datatable(dt, rownames = F,
+#             colnames = c("Zip Code", "Segment", "Income", "Population Change", "No Broadband Subscription",
+#                                                  "Only Mobile Broadband Subscriptions", "Only Smartphone"),
+#             options = list(pageLength = 10)) %>% 
+#     formatPercentage(4:7) %>% formatCurrency(3, digits = 0)
+#   
+# })
+
 output$dt <- renderDataTable({
   
-  dt <- sub_mapdat() %>% 
+  dt <- metro_sub() %>% 
     select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% 
     st_drop_geometry() %>% 
     mutate(across(c(starts_with("bbsub"), popPctCh, dv_onlycell), ~ .x / 100))
@@ -198,7 +227,7 @@ dataTableOutput("dt")
 
 ```
 
-Column {data-width=400}
+Column
 -------------------------------------------------
 
 ### Race/Ethnic Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
@@ -312,36 +341,6 @@ output$eduplot <- renderHighchart({
 })
 
 highchartOutput("eduplot")
-
-```
-
-Expanded View
-=================================================
-
-### U.S. Map
-
-```{r}
-# Generating the map
-output$usmap <- renderLeaflet({
-  map <- leaflet(full_mapdat) %>% 
-    addProviderTiles("CartoDB.Positron") %>% 
-    clearShapes() %>% 
-    addPolygons(fillColor = ~factpal(myclus),
-                color = "grey90",
-                smoothFactor = 0,
-                fillOpacity = 0.7,
-                layerId = ~zcta,
-                label = ~labels,
-                highlight = highlightOptions(
-                  color = "cyan",
-                  bringToFront = T
-                )) %>% 
-    addLegend(pal = factpal, values = ~myclus, title = "Segments")
-  
-  map
-})
-
-leafletOutput("usmap")
 
 ```
 
