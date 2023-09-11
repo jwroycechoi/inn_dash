@@ -1,6 +1,6 @@
 ---
 title: "INN Dashboard Sample"
-runtime: shiny
+runtime: shiny_prerendered
 output:
   flexdashboard::flex_dashboard
 ---
