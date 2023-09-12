@@ -33,8 +33,6 @@ COPY /data/mbi_summary.qs /bin/data/mbi_summary.qs
 COPY /data/msa.qs /bin/data/msa.qs
 WORKDIR /bin
 
-RUN R -e "print(.libPaths())"
-
 # make all app files readable (solves issue when dev in Windows, but building in Ubuntu)
 RUN chmod -R 755 /bin
 
