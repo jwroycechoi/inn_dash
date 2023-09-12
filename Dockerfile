@@ -2,10 +2,11 @@ FROM openanalytics/r-base
 
 LABEL maintainer="daan.seynaeve@openanalytics.eu"
 
-RUN apt-get update && apt-get install -y \
+RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     sudo \
     pandoc \
     pandoc-citeproc \
+    libxml2-dev \
     libcurl4-gnutls-dev \
     libcairo2-dev \
     libxt-dev \
@@ -18,8 +19,13 @@ RUN echo $http_proxy
 RUN echo $https_proxy
 RUN echo $no_proxy
 
+## update system libraries
+RUN apt-get update && \
+    apt-get upgrade -y && \
+    apt-get clean
+
 # packages needed for basic shiny functionality
-RUN R -e "options(internet.info = 0, warn = 2); install.packages(c('shiny', 'rmarkdown'), repos='https://cloud.r-project.org')"
+RUN R -e "options(internet.info = 0, warn = 2); install.packages(c('shiny', 'rmarkdown', 'plotly', 'tidyverse', 'sf', 'leaflet', 'pals', 'RColorBrewer', 'DT', 'highcharter', 'tigris'), repos='https://cloud.r-project.org')"
 
 # set host and port
 COPY Rprofile.site /usr/lib/R/etc/
