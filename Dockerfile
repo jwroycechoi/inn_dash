@@ -22,4 +22,18 @@ RUN R -e "install.packages('remotes')"
 RUN R -e "remotes::install_github('rspatial/terra')"
 RUN R -e "install.packages('leaflet')"
 
+# Make directory and copy Rmd and data files
+RUN mkdir -p /bin
+RUN mkdir -p /bin/data
+COPY inn_dashboard.Rmd /bin/inn_dashboard.Rmd
+COPY mapdat.qs /bin/data/mapdat.qs
+COPY mbi_summary.qs /bin/data/mbi_summary.qs
+COPY msa.qs /bin/data/msa.qs
+
+# make all app files readable (solves issue when dev in Windows, but building in Ubuntu)
+RUN chmod -R 755 /bin
+
 EXPOSE 3838
+
+# run flexdashboard as localhost and on exposed port in Docker container
+CMD ["R", "-e", "rmarkdown::run('/bin/inn_dashboard.Rmd', shiny_args = list(port = 3838, host = '0.0.0.0'))"]
