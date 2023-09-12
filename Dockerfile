@@ -19,7 +19,10 @@ RUN apt-get update && \
     apt-get clean
 
 # packages needed for basic shiny functionality
-RUN R -e "options(internet.info = 0, warn = 2); install.packages(c('shiny', 'rmarkdown', 'plotly', 'tidyverse', 'sf', 'leaflet', 'pals', 'RColorBrewer', 'DT', 'highcharter', 'tigris'), repos='https://cloud.r-project.org')"
+RUN R -e "install.packages(c('shiny', 'rmarkdown', 'plotly', 'tidyverse', 'sf', 'pals', 'RColorBrewer', 'DT', 'highcharter', 'tigris'), repos='https://cloud.r-project.org', dependencies = TRUE)"
+RUN R -e "install.packages('remotes')"
+RUN R -e "remotes::install_github('rspatial/terra')"
+RUN R -e "install.packages('leaflet')"
 
 
 EXPOSE 3838
