@@ -12,12 +12,7 @@ RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     libxt-dev \
     libssl-dev \
     libssh2-1-dev \
-    libssl1.0.0 \
-    
-RUN echo $http_proxy
-RUN echo $https_proxy
-RUN echo $no_proxy
-
+    libssl1.0.0 
 ## update system libraries
 RUN apt-get update && \
     apt-get upgrade -y && \
