@@ -24,5 +24,6 @@ RUN R -e "install.packages('remotes')"
 RUN R -e "remotes::install_github('rspatial/terra')"
 RUN R -e "install.packages('leaflet')"
 
+ENTRYPOINT ["sh", "-c"]
 
 EXPOSE 3838
