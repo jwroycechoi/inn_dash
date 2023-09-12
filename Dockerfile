@@ -26,9 +26,9 @@ RUN R -e "install.packages('leaflet')"
 RUN mkdir -p /bin
 RUN mkdir -p /bin/data
 COPY inn_dashboard.Rmd /bin/inn_dashboard.Rmd
-COPY mapdat.qs /bin/data/mapdat.qs
-COPY mbi_summary.qs /bin/data/mbi_summary.qs
-COPY msa.qs /bin/data/msa.qs
+COPY /data/mapdat.qs /bin/data/mapdat.qs
+COPY /data/mbi_summary.qs /bin/data/mbi_summary.qs
+COPY /data/msa.qs /bin/data/msa.qs
 
 # make all app files readable (solves issue when dev in Windows, but building in Ubuntu)
 RUN chmod -R 755 /bin
