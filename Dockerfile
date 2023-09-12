@@ -1,6 +1,4 @@
-FROM openanalytics/r-base
-
-LABEL maintainer="daan.seynaeve@openanalytics.eu"
+FROM rocker/shiny
 
 RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     sudo \
