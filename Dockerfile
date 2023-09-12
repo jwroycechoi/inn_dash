@@ -12,7 +12,7 @@ RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     libxt-dev \
     libssl-dev \
     libssh2-1-dev \
-    libssl1-dev 
+    libssl-dev 
 ## update system libraries
 RUN apt-get update && \
     apt-get upgrade -y && \
