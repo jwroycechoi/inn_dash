@@ -21,6 +21,7 @@ RUN R -e "install.packages(c('shiny', 'rmarkdown', 'plotly', 'tidyverse', 'sf', 
 RUN R -e "install.packages('remotes')"
 RUN R -e "remotes::install_github('rspatial/terra')"
 RUN R -e "install.packages('leaflet')"
+RUN R -e "install.packages('flexdashboard')"
 
 # Make directory and copy Rmd and data files
 RUN mkdir -p /bin
