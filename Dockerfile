@@ -27,7 +27,5 @@ RUN apt-get update && \
 # packages needed for basic shiny functionality
 RUN R -e "options(internet.info = 0, warn = 2); install.packages(c('shiny', 'rmarkdown', 'plotly', 'tidyverse', 'sf', 'leaflet', 'pals', 'RColorBrewer', 'DT', 'highcharter', 'tigris'), repos='https://cloud.r-project.org')"
 
-# set host and port
-COPY Rprofile.site /usr/lib/R/etc/
 
 EXPOSE 3838
