@@ -13,7 +13,6 @@ RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     libssl-dev \
     libssh2-1-dev \
     libssl1.0.0 \
-    && rm -rf /var/lib/apt/lists/*
     
 RUN echo $http_proxy
 RUN echo $https_proxy
