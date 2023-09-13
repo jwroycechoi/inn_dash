@@ -23,6 +23,7 @@ RUN R -e "install.packages('flexdashboard', repos='https://cloud.r-project.org',
 RUN R -e "install.packages('DT', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('highcharter', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('tigris', repos='https://cloud.r-project.org', dependencies = TRUE)"
+RUN R -e "install.packages('qs', repos='https://cloud.r-project.org', dependencies = TRUE)"
 
 EXPOSE 3838
 
