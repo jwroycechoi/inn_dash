@@ -21,11 +21,11 @@ RUN apt-get update && \
 
 # packages needed for basic shiny functionality
 RUN R -e "install.packages(c('shiny', 'rmarkdown', 'plotly', 'sf', 'pals', 'RColorBrewer', 'DT', 'highcharter', 'tigris'), repos='https://cloud.r-project.org', dependencies = TRUE)"
-RUN R -e "install.packages('remotes')"
+RUN R -e "install.packages('remotes', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "remotes::install_github('rspatial/terra')"
-RUN R -e "install.packages('leaflet')"
-RUN R -e "install.packages('flexdashboard')"
-RUN R -e "install.packages('tidyverse')"
+RUN R -e "install.packages('leaflet', repos='https://cloud.r-project.org', dependencies = TRUE)"
+RUN R -e "install.packages('flexdashboard', repos='https://cloud.r-project.org', dependencies = TRUE)"
+RUN R -e "install.packages('tidyverse', repos='https://cloud.r-project.org', dependencies = TRUE)"
 
 # Make directory and copy Rmd and data files
 RUN mkdir -p /data
