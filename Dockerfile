@@ -25,18 +25,16 @@ RUN R -e "install.packages('flexdashboard')"
 RUN R -e "install.packages('tidyverse')"
 
 # Make directory and copy Rmd and data files
-RUN mkdir -p /bin
-RUN mkdir -p /bin/data
-COPY inn_dashboard.Rmd /bin/inn_dashboard.Rmd
-COPY /data/mapdat.qs /bin/data/mapdat.qs
-COPY /data/mbi_summary.qs /bin/data/mbi_summary.qs
-COPY /data/msa.qs /bin/data/msa.qs
-WORKDIR /bin
+RUN mkdir -p /data
+COPY inn_dashboard.Rmd inn_dashboard.Rmd
+COPY /data/mapdat.qs /data/mapdat.qs
+COPY /data/mbi_summary.qs /data/mbi_summary.qs
+COPY /data/msa.qs /data/msa.qs
 
 # make all app files readable (solves issue when dev in Windows, but building in Ubuntu)
-RUN chmod -R 755 /bin
+RUN chmod -R 755 
 
 EXPOSE 3838
 
 # run flexdashboard as localhost and on exposed port in Docker container
-CMD ["R", "-e", "rmarkdown::run('/bin/inn_dashboard.Rmd', shiny_args = list(port = 3838, host = '0.0.0.0'))"]
+CMD ["R", "-e", "rmarkdown::run('inn_dashboard.Rmd', shiny_args = list(port = 3838, host = '0.0.0.0'))"]
