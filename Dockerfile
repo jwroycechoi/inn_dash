@@ -5,12 +5,15 @@ RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     pandoc \
     pandoc-citeproc \
     libxml2-dev \
-    libcurl4-gnutls-dev \
+    libcurl4-openssl-dev \
     libcairo2-dev \
     libxt-dev \
     libssl-dev \
     libssh2-1-dev \
-    libssl-dev 
+    libssl-dev \
+    libudunits2-dev \
+    libsasl2-dev \
+    libv8-dev
 ## update system libraries
 RUN apt-get update && \
     apt-get upgrade -y && \
@@ -30,9 +33,6 @@ COPY inn_dashboard.Rmd inn_dashboard.Rmd
 COPY /data/mapdat.qs /data/mapdat.qs
 COPY /data/mbi_summary.qs /data/mbi_summary.qs
 COPY /data/msa.qs /data/msa.qs
-
-# make all app files readable (solves issue when dev in Windows, but building in Ubuntu)
-RUN chmod -R 755 
 
 EXPOSE 3838
 
