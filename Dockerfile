@@ -1,8 +1,7 @@
 FROM rocker/shiny-verse:latest
 
 RUN apt-get update -qq && apt-get -y --no-install-recommends install \
-    libv8-dev \
-    shiny-server
+    libv8-dev 
 ## update system libraries
 RUN apt-get update && \
     apt-get upgrade -y && \
