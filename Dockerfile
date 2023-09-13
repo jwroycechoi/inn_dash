@@ -1,7 +1,8 @@
 FROM rocker/geospatial:latest
 
 RUN apt-get update -qq && apt-get -y --no-install-recommends install \
-    libv8-dev
+    libv8-dev \
+    shiny-server
 ## update system libraries
 RUN apt-get update && \
     apt-get upgrade -y && \
