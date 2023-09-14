@@ -1,4 +1,4 @@
-FROM rocker/geospatial:latest
+FROM rocker/geospatial
 
 RUN export ADD=shiny && bash /etc/cont-init.d./add
 
