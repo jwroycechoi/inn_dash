@@ -14,7 +14,6 @@ COPY inn_dashboard.Rmd /dashapp/inn_dashboard.Rmd
 COPY /data/mapdat.qs /dashapp/data/mapdat.qs
 COPY /data/mbi_summary.qs /dashapp/data/mbi_summary.qs
 COPY /data/msa.qs /dashapp/data/msa.qs
-WORKDIR /dashapp
 
 # packages needed for basic shiny functionality
 RUN R -e "install.packages('pals', repos='https://cloud.r-project.org', dependencies = TRUE)"
@@ -26,6 +25,8 @@ RUN R -e "install.packages('tigris', repos='https://cloud.r-project.org', depend
 RUN R -e "install.packages('qs', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('sf', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('leaflet', repos='https://cloud.r-project.org', dependencies = TRUE)"
+
+WORKDIR /dashapp
 
 EXPOSE 3838
 
