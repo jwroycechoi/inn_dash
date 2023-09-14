@@ -1,4 +1,6 @@
-FROM rocker/shiny-verse:latest
+FROM rocker/geospatial:latest
+
+RUN export ADD=shiny && bash /etc/cont-init.d./add
 
 RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     libv8-dev 
@@ -23,8 +25,6 @@ RUN R -e "install.packages('DT', repos='https://cloud.r-project.org', dependenci
 RUN R -e "install.packages('highcharter', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('tigris', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('qs', repos='https://cloud.r-project.org', dependencies = TRUE)"
-RUN R -e "install.packages('sf', repos='https://cloud.r-project.org', dependencies = TRUE)"
-RUN R -e "install.packages('leaflet', repos='https://cloud.r-project.org', dependencies = TRUE)"
 
 WORKDIR /dashapp
 
