@@ -1,6 +1,8 @@
 FROM rocker/geospatial
 
-RUN export ADD=shiny && bash /etc/cont-init.d./add
+# RUN export ADD=shiny && bash /etc/cont-init.d./add
+
+RUN /bin/sh -c /rocker_scripts/install_shiny_server.sh # buildkit
 
 RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     libv8-dev 
