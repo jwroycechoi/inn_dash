@@ -1,8 +1,4 @@
-FROM rocker/geospatial
-
-# RUN export ADD=shiny && bash /etc/cont-init.d./add
-
-RUN /bin/sh -c /rocker_scripts/install_shiny_server.sh # buildkit
+FROM rocker/rocker/shiny-verse
 
 RUN apt-get update -qq && apt-get -y --no-install-recommends install \
     libv8-dev 
@@ -21,11 +17,11 @@ COPY /data/msa.qs /dashapp/data/msa.qs
 
 # packages needed for basic shiny functionality
 RUN R -e "install.packages('pals', repos='https://cloud.r-project.org', dependencies = TRUE)"
-RUN R -e "install.packages('plotly', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('flexdashboard', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('DT', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('highcharter', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('tigris', repos='https://cloud.r-project.org', dependencies = TRUE)"
+RUN R -e "install.packages('qs', repos='https://cloud.r-project.org', dependencies = TRUE)"
 RUN R -e "install.packages('qs', repos='https://cloud.r-project.org', dependencies = TRUE)"
 
 WORKDIR /dashapp
