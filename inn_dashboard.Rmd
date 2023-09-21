@@ -67,7 +67,7 @@ Sidebar {.sidebar}
 
 The segments are based on various set of demographic, socioeconomic status variables at the zip code level. Please select a state from below. You can freely browse the map to explore specific Zip Codes.
 
-```{r}
+```{r, context="server"}
 # Define metro area
 # selectInput("state", label = "Select a State", choices = lookup,
 #             selected = "IL")
