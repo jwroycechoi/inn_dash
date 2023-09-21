@@ -3,11 +3,11 @@ title: "INN Dashboard Sample"
 output:
   flexdashboard::flex_dashboard:
     orientation: columns
-runtime: shiny_prerendered
+runtime: shiny
 ---
 
 
-```{r global, context="setup", include=FALSE}
+```{r global, include=FALSE}
 library(shiny)
 library(tidyverse)
 library(sf)
@@ -84,7 +84,7 @@ Column
 
 ### Map
 
-```{r, context="server"}
+```{r}
 # Reactive subset
 # sub_mapdat <- reactive({
 #   full_mapdat %>% 
@@ -185,7 +185,7 @@ leafletOutput("map")
 
 ### Digital Profile Table
 
-```{r, context="server"}
+```{r}
 # Create reactive subset data
 metro_sub <- reactive({
   bbox <- st_bbox(sub_mapdat(), crs = st_crs(full_mapdat))
@@ -232,7 +232,7 @@ Column
 
 ### Race/Ethnic Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
 
-```{r, context="server"}
+```{r}
 output$raceplot <- renderHighchart({
   
   zd <- zip_data()
@@ -292,7 +292,7 @@ highchartOutput("raceplot")
 
 ### Educational Attainment Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
 
-```{r, context="server"}
+```{r}
 output$eduplot <- renderHighchart({
   
   zd <- zip_data()
