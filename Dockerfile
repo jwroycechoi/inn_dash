@@ -58,6 +58,7 @@ RUN install2.r -e -s \
 # RUN R -e "install.packages('leaflet', repos='https://cloud.r-project.org', dependencies = TRUE)"
 
 WORKDIR /dashapp
+RUN R -e "rmarkdown::render('inn_dashboard.Rmd')"
 
 # make all app files readable (solves issue when dev in Windows, but building in Ubuntu)
 RUN chmod -R 755 /dashapp
@@ -65,4 +66,4 @@ RUN chmod -R 755 /dashapp
 EXPOSE 3838
 
 # run flexdashboard as localhost and on exposed port in Docker container
-CMD ["R", "-e", "rmarkdown::run('/dashapp/inn_dashboard.Rmd', shiny_args = list(port = 3838, host = '0.0.0.0'))"]
+CMD ["R", "-e", "rmarkdown::run(shiny_args = list(port = 3838, host = '0.0.0.0'))"]

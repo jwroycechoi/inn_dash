@@ -3,7 +3,7 @@ title: "INN Dashboard Sample"
 output:
   flexdashboard::flex_dashboard:
     orientation: columns
-runtime: shiny
+runtime: shiny_prerendered
 ---
 
 
