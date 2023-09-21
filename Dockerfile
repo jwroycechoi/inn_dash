@@ -1,5 +1,7 @@
 FROM rocker/shiny-verse
 
+MAINTAINER Jaewon R. Choi "jwroycechoi@gmail.com"
+
 # Use this in R to check required system libraries
 # pak::pkg_sysreqs(c("leaflet","sf","pals","flexdashboard","DT","highcharter","tigris","qs"), sysreqs_platform = "ubuntu-22.04")
 
@@ -56,6 +58,9 @@ RUN install2.r -e -s \
 # RUN R -e "install.packages('leaflet', repos='https://cloud.r-project.org', dependencies = TRUE)"
 
 WORKDIR /dashapp
+
+# make all app files readable (solves issue when dev in Windows, but building in Ubuntu)
+RUN chmod -R 755 /dashapp
 
 EXPOSE 3838
 
