@@ -7,7 +7,7 @@ runtime: shiny_prerendered
 ---
 
 
-```{r global, include=FALSE}
+```{r global, context="setup", include=FALSE}
 library(shiny)
 library(tidyverse)
 library(sf)
