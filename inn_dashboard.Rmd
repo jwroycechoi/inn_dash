@@ -1,8 +1,9 @@
 ---
 title: "INN Dashboard Sample"
-runtime: shiny_prerendered
 output:
   flexdashboard::flex_dashboard
+    orientation: columns
+runtime: shiny_prerendered
 ---
 
 
@@ -83,7 +84,7 @@ Column
 
 ### Map
 
-```{r, context="server"}
+```{r}
 # Reactive subset
 # sub_mapdat <- reactive({
 #   full_mapdat %>% 
@@ -96,7 +97,7 @@ sub_mapdat <- reactive({
 })
 
 # Create map
-output$map <- renderLeaflet({
+renderLeaflet({
   # Get the bounding box for the filtered data
   bbox <- st_bbox(sub_mapdat()) %>% as.vector()
   
@@ -176,7 +177,7 @@ zip_data <- reactive({
   return(filter(full_mapdat, zcta == click_zip()))
 })
 
-leafletOutput("map")
+# leafletOutput("map")
 
 
 
@@ -184,7 +185,7 @@ leafletOutput("map")
 
 ### Digital Profile Table
 
-```{r, context="server"}
+```{r}
 # Create reactive subset data
 metro_sub <- reactive({
   bbox <- st_bbox(sub_mapdat(), crs = st_crs(full_mapdat))
@@ -207,7 +208,8 @@ metro_sub <- reactive({
 #   
 # })
 
-output$dt <- renderDataTable({
+# output$dt <- 
+renderDataTable({
   
   dt <- metro_sub() %>% 
     select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% 
@@ -222,7 +224,7 @@ output$dt <- renderDataTable({
   
 })
 
-dataTableOutput("dt")
+# dataTableOutput("dt")
 
 ```
 
@@ -231,8 +233,9 @@ Column
 
 ### Race/Ethnic Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
 
-```{r, context="server"}
-output$raceplot <- renderHighchart({
+```{r}
+# output$raceplot <- 
+renderHighchart({
   
   zd <- zip_data()
   
@@ -285,14 +288,15 @@ output$raceplot <- renderHighchart({
   
 })
 
-highchartOutput("raceplot")
+# highchartOutput("raceplot")
 
 ```
 
 ### Educational Attainment Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
 
-```{r, context="server"}
-output$eduplot <- renderHighchart({
+```{r}
+# output$eduplot <- 
+renderHighchart({
   
   zd <- zip_data()
   
@@ -339,7 +343,7 @@ output$eduplot <- renderHighchart({
   
 })
 
-highchartOutput("eduplot")
+# highchartOutput("eduplot")
 
 ```
 
