@@ -3,11 +3,11 @@ title: "INN Dashboard Sample"
 output:
   flexdashboard::flex_dashboard
     orientation: columns
-runtime: shiny_prerendered
+runtime: shiny
 ---
 
 
-```{r global, context="setup", include=FALSE}
+```{r global, include=FALSE}
 library(shiny)
 library(tidyverse)
 library(sf)
