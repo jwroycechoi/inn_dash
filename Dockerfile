@@ -1,4 +1,4 @@
-FROM rocker/rocker/shiny-verse
+FROM rocker/shiny-verse
 
 # Use this in R to check required system libraries
 # pak::pkg_sysreqs(c("leaflet","sf","pals","flexdashboard","DT","highcharter","tigris","qs"), sysreqs_platform = "ubuntu-22.04")
