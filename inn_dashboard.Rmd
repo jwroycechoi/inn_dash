@@ -96,7 +96,7 @@ sub_mapdat <- reactive({
 })
 
 # Create map
-map <- renderLeaflet({
+output$map <- renderLeaflet({
   # Get the bounding box for the filtered data
   bbox <- st_bbox(sub_mapdat()) %>% as.vector()
   
@@ -207,7 +207,7 @@ metro_sub <- reactive({
 #   
 # })
 
-dt <- renderDataTable({
+output$dt <- renderDataTable({
   
   dt <- metro_sub() %>% 
     select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% 
@@ -232,7 +232,7 @@ Column
 ### Race/Ethnic Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
 
 ```{r, context="server"}
-raceplot <- renderHighchart({
+output$raceplot <- renderHighchart({
   
   zd <- zip_data()
   
@@ -292,7 +292,7 @@ highchartOutput("raceplot")
 ### Educational Attainment Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
 
 ```{r, context="server"}
-eduplot <- renderHighchart({
+output$eduplot <- renderHighchart({
   
   zd <- zip_data()
   
