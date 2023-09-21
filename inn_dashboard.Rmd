@@ -96,7 +96,7 @@ sub_mapdat <- reactive({
 })
 
 # Create map
-output$map <- renderLeaflet({
+map <- renderLeaflet({
   # Get the bounding box for the filtered data
   bbox <- st_bbox(sub_mapdat()) %>% as.vector()
   
