@@ -6,7 +6,7 @@ output:
 ---
 
 
-```{r global, include=FALSE}
+```{r global, context="setup", include=FALSE}
 library(shiny)
 library(tidyverse)
 library(sf)
@@ -83,7 +83,7 @@ Column
 
 ### Map
 
-```{r}
+```{r, context="server"}
 # Reactive subset
 # sub_mapdat <- reactive({
 #   full_mapdat %>% 
@@ -184,7 +184,7 @@ leafletOutput("map")
 
 ### Digital Profile Table
 
-```{r}
+```{r, context="server"}
 # Create reactive subset data
 metro_sub <- reactive({
   bbox <- st_bbox(sub_mapdat(), crs = st_crs(full_mapdat))
@@ -231,7 +231,7 @@ Column
 
 ### Race/Ethnic Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
 
-```{r}
+```{r, context="server"}
 raceplot <- renderHighchart({
   
   zd <- zip_data()
@@ -291,7 +291,7 @@ highchartOutput("raceplot")
 
 ### Educational Attainment Profile, selected Zip code, Segment, and Metro Average (click on the map to show chart)
 
-```{r}
+```{r, context="server"}
 eduplot <- renderHighchart({
   
   zd <- zip_data()
