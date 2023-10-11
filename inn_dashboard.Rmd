@@ -99,12 +99,35 @@ sub_mapdat <- reactive({
 # Create map
 output$map <- renderLeaflet({
   # Get the bounding box for the filtered data
-  bbox <- st_bbox(sub_mapdat()) %>% as.vector()
+  bbox <- st_bbox(sub_mapdat())
+  
+  xrange <- bbox$xmax - bbox$xmin
+  yrange <- bbox$ymax - bbox$ymin
+  bbox[1] <- bbox[1] - xrange
+  bbox[2] <- bbox[2] - yrange
+  bbox[3] <- bbox[3] + xrange
+  bbox[4] <- bbox[4] + yrange
+  bboxv <- bbox %>% as.vector()
   
   # Create leaflet object
   leaflet() %>% 
     addProviderTiles("CartoDB.Positron") %>% 
     clearShapes() %>% 
+    addPolygons(data = sub_mapdat(),
+                fill = F,
+                color = "black",
+                weight = 2) %>% 
+    fitBounds(lng1 = bboxv[1],
+              lat1 = bboxv[2],
+              lng2 = bboxv[3],
+              lat2 = bboxv[4])
+    # setView(lng = (bbox$xmin + bbox$xmax) / 2,  # Center of the bounding box
+    #         lat = (bbox$ymin + bbox$ymax) / 2,  # Center of the bounding box
+    #         zoom = 10)
+  
+  # Leaflet proxy
+  proxy <- leafletProxy("map")
+  proxy %>% 
     addPolygons(data = full_mapdat,
                 fillColor = ~factpal(myclus),
                 color = "white",
@@ -116,20 +139,10 @@ output$map <- renderLeaflet({
                 group = "fullclus",
                 highlight = highlightOptions(
                   color = "cyan",
-                  bringToFront = T)) %>%
-    # addLegend(pal = factpal, values = full_mapdat$myclus, title = "Segments", group = "fullclus") %>% 
-    addPolygons(data = sub_mapdat(),
-                fill = F,
-                color = "black",
-                weight = 2) %>% 
-    fitBounds(lng1 = bbox[1],
-              lat1 = bbox[2],
-              lng2 = bbox[3],
-              lat2 = bbox[4])
-    # setView(lng = (bbox$xmin + bbox$xmax) / 2,  # Center of the bounding box
-    #         lat = (bbox$ymin + bbox$ymax) / 2,  # Center of the bounding box
-    #         zoom = 10)
+                  bringToFront = T))
+  # addLegend(pal = factpal, values = full_mapdat$myclus, title = "Segments", group = "fullclus") %>% 
 })
+
 
 # Click event for the map (used to generate table/chart)
 click_zip <- eventReactive(input$map_shape_click, {
@@ -154,21 +167,29 @@ observeEvent(input$map_shape_click, {
     }
   })
   # Create leaflet proxy
-  proxy <- leafletProxy("map")
+  
   # Subset the clicked zipcode
   sub <- filter(full_mapdat, zcta %in% zip_ids())
   # Get boundaries for selected zip
-  # box <- st_bbox(sub) %>% as.vector()
+  bbox <- st_bbox(sub)
+  xrange <- bbox$xmax - bbox$xmin
+  yrange <- bbox$ymax - bbox$ymin
+  bbox[1] <- bbox[1] - xrange
+  bbox[2] <- bbox[2] - yrange
+  bbox[3] <- bbox[3] + xrange
+  bbox[4] <- bbox[4] + yrange
+  bbox <- bbox %>% as.vector()
   
+  proxy <- leafletProxy("map")
   # Clear old selection on map, and add new selection
   proxy %>%
     clearGroup(group = "sub") %>%
     addPolygons(data = sub, fill = F, color = "#FFFF00",
-                opacity = 1, group = "sub", weight = 5)
-    # fitBounds(lng1 = box[1],
-    #           lat1 = box[2],
-    #           lng2 = box[3],
-    #           lat2 = box[4])
+                opacity = 1, group = "sub", weight = 5) %>% 
+    fitBounds(lng1 = bbox[1],
+              lat1 = bbox[2],
+              lng2 = bbox[3],
+              lat2 = bbox[4])
 
 })
 
@@ -238,15 +259,19 @@ output$raceplot <- renderHighchart({
   zd <- zip_data()
   
   # Set up metro data
-  metro_data <- full_mapdat %>% st_drop_geometry() %>% group_by(metro_group) %>% 
+  metro_data <- full_mapdat %>% st_drop_geometry() %>% 
+    filter(metro_group == zd$metro_group) %>% 
+    group_by(metro_group) %>% 
     summarise(across(c(starts_with("race") & ends_with("2021"), lessthan9_2021, highschool_2021,
-                       college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1))) %>% 
-    filter(metro_group == zd$metro_group)
+                       college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1)))
+    
   # Set up segment data
-  clus_data <- full_mapdat %>% st_drop_geometry() %>% group_by(myclus) %>% 
+  clus_data <- full_mapdat %>% st_drop_geometry() %>% 
+    filter(myclus == zd$myclus) %>% 
+    group_by(myclus) %>% 
     summarise(across(c(starts_with("race") & ends_with("2021"), lessthan9_2021, highschool_2021,
-                       college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1))) %>% 
-    filter(myclus == zd$myclus)
+                       college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1)))
+    
   
   chart <- highchart() %>% 
     hc_chart(type = "column") %>% 
@@ -298,15 +323,19 @@ output$eduplot <- renderHighchart({
   zd <- zip_data()
   
   # Set up metro data
-  metro_data <- full_mapdat %>% st_drop_geometry() %>% group_by(metro_group) %>% 
+  metro_data <- full_mapdat %>% st_drop_geometry() %>% 
+    filter(metro_group == zd$metro_group) %>% 
+    group_by(metro_group) %>% 
     summarise(across(c(starts_with("race") & ends_with("2021"), lessthan9_2021, highschool_2021,
-                       college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1))) %>% 
-    filter(metro_group == zd$metro_group)
+                       college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1)))
+    
   # Set up segment data
-  clus_data <- full_mapdat %>% st_drop_geometry() %>% group_by(myclus) %>% 
+  clus_data <- full_mapdat %>% st_drop_geometry() %>% 
+    filter(myclus == zd$myclus) %>% 
+    group_by(myclus) %>% 
     summarise(across(c(starts_with("race") & ends_with("2021"), lessthan9_2021, highschool_2021,
-                       college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1))) %>% 
-    filter(myclus == zd$myclus)
+                       college_2021, bachelor_2021, graduate_2021), ~ round(mean(.x, na.rm = T), 1)))
+    
   
   chart <- highchart() %>% 
     hc_chart(type = "column") %>% 
