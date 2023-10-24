@@ -18,20 +18,10 @@ library(DT)
 library(highcharter)
 library(tigris)
 options(tigris_use_cache = T)
+library(rmapshaper)
 
 # Read in data and subset for the selected area
-full_mbisum <- qs::qread("data/mbi_summary.qs")
-msa <- qs::qread("data/msa.qs")
-full_mapdat <- qs::qread("data/mapdat.qs") %>% 
-  left_join(., msa, by = c("zcta" = "zip")) %>% 
-  mutate(metro_group = str_extract(myclus, "\\d")) %>% 
-  st_transform("+proj=longlat +datum=WGS84") %>% 
-  st_simplify()
-  
-metroshape <- tigris::metro_divisions() %>% 
-  st_transform("+proj=longlat +datum=WGS84") %>% 
-  st_simplify()
-  
+load("data/data.rda")
 
 # Define the list of available metros
 metrolookup <- sort(unique(na.omit(metroshape$NAME)))
@@ -98,36 +88,10 @@ sub_mapdat <- reactive({
 
 # Create map
 output$map <- renderLeaflet({
-  # Get the bounding box for the filtered data
-  bbox <- st_bbox(sub_mapdat())
-  
-  xrange <- bbox$xmax - bbox$xmin
-  yrange <- bbox$ymax - bbox$ymin
-  bbox[1] <- bbox[1] - xrange
-  bbox[2] <- bbox[2] - yrange
-  bbox[3] <- bbox[3] + xrange
-  bbox[4] <- bbox[4] + yrange
-  bboxv <- bbox %>% as.vector()
-  
+  bbox <- st_bbox(sub_mapdat()) %>% as.vector()
   # Create leaflet object
   leaflet() %>% 
     addProviderTiles("CartoDB.Positron") %>% 
-    clearShapes() %>% 
-    addPolygons(data = sub_mapdat(),
-                fill = F,
-                color = "black",
-                weight = 2) %>% 
-    fitBounds(lng1 = bboxv[1],
-              lat1 = bboxv[2],
-              lng2 = bboxv[3],
-              lat2 = bboxv[4])
-    # setView(lng = (bbox$xmin + bbox$xmax) / 2,  # Center of the bounding box
-    #         lat = (bbox$ymin + bbox$ymax) / 2,  # Center of the bounding box
-    #         zoom = 10)
-  
-  # Leaflet proxy
-  proxy <- leafletProxy("map")
-  proxy %>% 
     addPolygons(data = full_mapdat,
                 fillColor = ~factpal(myclus),
                 color = "white",
@@ -139,8 +103,11 @@ output$map <- renderLeaflet({
                 group = "fullclus",
                 highlight = highlightOptions(
                   color = "cyan",
-                  bringToFront = T))
-  # addLegend(pal = factpal, values = full_mapdat$myclus, title = "Segments", group = "fullclus") %>% 
+                  bringToFront = T)) %>% 
+    setView(lng = (bbox[1] + bbox[3]) / 2,  # Center of the bounding box
+            lat = (bbox[2] + bbox[4]) / 2,  # Center of the bounding box
+            zoom = 10) %>% 
+    addLegend(pal = factpal, values = full_mapdat$myclus, title = "Segments", group = "fullclus")
 })
 
 
@@ -171,14 +138,14 @@ observeEvent(input$map_shape_click, {
   # Subset the clicked zipcode
   sub <- filter(full_mapdat, zcta %in% zip_ids())
   # Get boundaries for selected zip
-  bbox <- st_bbox(sub)
-  xrange <- bbox$xmax - bbox$xmin
-  yrange <- bbox$ymax - bbox$ymin
-  bbox[1] <- bbox[1] - xrange
-  bbox[2] <- bbox[2] - yrange
-  bbox[3] <- bbox[3] + xrange
-  bbox[4] <- bbox[4] + yrange
-  bbox <- bbox %>% as.vector()
+  bbox2 <- st_bbox(sub)
+  xrange <- bbox2$xmax - bbox2$xmin
+  yrange <- bbox2$ymax - bbox2$ymin
+  bbox2[1] <- bbox2[1] - xrange
+  bbox2[2] <- bbox2[2] - yrange
+  bbox2[3] <- bbox2[3] + xrange
+  bbox2[4] <- bbox2[4] + yrange
+  bbox2 <- bbox2 %>% as.vector()
   
   proxy <- leafletProxy("map")
   # Clear old selection on map, and add new selection
@@ -186,10 +153,10 @@ observeEvent(input$map_shape_click, {
     clearGroup(group = "sub") %>%
     addPolygons(data = sub, fill = F, color = "#FFFF00",
                 opacity = 1, group = "sub", weight = 5) %>% 
-    fitBounds(lng1 = bbox[1],
-              lat1 = bbox[2],
-              lng2 = bbox[3],
-              lat2 = bbox[4])
+    fitBounds(lng1 = bbox2[1],
+              lat1 = bbox2[2],
+              lng2 = bbox2[3],
+              lat2 = bbox2[4])
 
 })
 
@@ -209,9 +176,12 @@ leafletOutput("map")
 ```{r}
 # Create reactive subset data
 metro_sub <- reactive({
-  bbox <- st_bbox(sub_mapdat(), crs = st_crs(full_mapdat))
-  metro_sub <- st_crop(full_mapdat, bbox)
-  return(metro_sub)
+  bbox <- st_bbox(sub_mapdat(), crs = st_crs(full_mapdat)) %>% st_as_sfc()
+  metsub <- st_intersection(full_mapdat, bbox) %>% 
+    select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% 
+    st_drop_geometry() %>%
+    mutate(across(c(starts_with("bbsub"), popPctCh, dv_onlycell), ~ .x / 100))
+  return(metsub)
 })
 
 # output$dt <- renderDataTable({
@@ -231,12 +201,12 @@ metro_sub <- reactive({
 
 output$dt <- renderDataTable({
   
-  dt <- metro_sub() %>% 
-    select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% 
-    st_drop_geometry() %>% 
-    mutate(across(c(starts_with("bbsub"), popPctCh, dv_onlycell), ~ .x / 100))
-  
-  datatable(dt, rownames = F,
+  # dt <- metro_sub() %>% 
+  #   select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% 
+  #   st_drop_geometry() %>%
+  #   mutate(across(c(starts_with("bbsub"), popPctCh, dv_onlycell), ~ .x / 100))
+  # 
+  datatable(metro_sub(), rownames = F,
             colnames = c("Zip Code", "Segment", "Income", "Population Change", "No Broadband Subscription",
                                                  "Only Mobile Broadband Subscriptions", "Only Smartphone"),
             options = list(pageLength = 10)) %>% 
