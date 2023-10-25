@@ -176,8 +176,9 @@ leafletOutput("map")
 ```{r}
 # Create reactive subset data
 metro_sub <- reactive({
-  bbox <- st_bbox(sub_mapdat(), crs = st_crs(full_mapdat)) %>% st_as_sfc()
-  metsub <- st_intersection(full_mapdat, bbox) %>% 
+  submsa <- zip_data()$msa
+  metsub <- full_mapdat %>% 
+    filter(msa == submsa) %>% 
     select(zcta, myclus, medHHincome_2021, popPctCh, bbsub_none, bbsub_onlycell, dv_onlycell) %>% 
     st_drop_geometry() %>%
     mutate(across(c(starts_with("bbsub"), popPctCh, dv_onlycell), ~ .x / 100))
