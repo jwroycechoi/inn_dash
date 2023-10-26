@@ -1,8 +1,11 @@
 ---
-title: "INN Dashboard Sample"
+title: "INN Audience Segment Dashboard"
 output:
   flexdashboard::flex_dashboard:
     orientation: columns
+    theme:
+      version: 4
+      bootswatch: yeti
 runtime: shiny
 ---
 
@@ -19,6 +22,7 @@ library(highcharter)
 library(tigris)
 options(tigris_use_cache = T)
 library(rmapshaper)
+library(kableExtra)
 
 # Read in data and subset for the selected area
 load("data/data.rda")
@@ -54,9 +58,15 @@ full_mapdat$labels <- paste0(
 Sidebar {.sidebar}
 =================================================
 
-### National Market Segments
+#### Audience Market Segments
 
-The segments are based on various set of demographic, socioeconomic status variables at the zip code level. Please select a state from below. You can freely browse the map to explore specific Zip Codes.
+The segments are based on various set of demographic, socioeconomic status variables at the ZIP code level. See [Methods] for more details. 
+
+**Please select a metropolitan area of interest from below.** 
+
+**Click on a ZIP code** to see additional information of the ZIP code. You can freely browse the map to explore specific ZIP Codes.
+
+##### Select Metro Area
 
 ```{r}
 # Define metro area
@@ -344,7 +354,45 @@ highchartOutput("eduplot")
 
 ```
 
-About Segmentation Scheme
+Methods
 =================================================
 
-**Expalantion about the segmentation scheme**
+Column
+-------------------------------------------------
+### General Methods
+
+#### Overview
+We employed an analytic technique that searched for common demographic characteristics in markets across the U.S. In individual partner reports, we used those profiles to identify audience segments across the the publication's target markets. 
+
+We combine data from various sources, including the U.S. Census and USDA. The resulting segment groups put publication target markets within a broader scope.
+
+##### Audience Segment Assignment Process
+```{r, echo=FALSE, out.width='100%'}
+knitr::include_graphics("figs/method_fig1.png")
+```
+
+We created a total of **25 distinct segment groups.** Figure above visualizes the structure of these 25 segment groups and the overall process of segment group assignments. We assign one of the 25 segment groups to the publication target market ZIP codes. Below are how names of the segments are constructed. For detailed information about the segmentation scheme, please contact us.
+
+In essence, what this procedure does is it allows you to see the broader picture of your target markets. For instance, if one is targeting 200 ZIP codes, after applying this scheme, one will be able to shrink 200 ZIP codes into, for example, 10 segment groups.
+
+##### Audience Segment Naming Scheme
+```{r, echo=FALSE, out.width='100%'}
+knitr::include_graphics("figs/method_fig2.png")
+```
+
+Column
+-------------------------------------------------
+### Segment Descriptions
+```{r, echo=FALSE}
+description <- readxl::read_excel("data/seg_description.xlsx")
+knitr::kable(description) %>% 
+  kable_styling(bootstrap_options = c("striped", "condensed")) %>% 
+  column_spec(1, bold = T) %>% 
+  pack_rows("1: Metropolitan", 1, 12) %>% 
+  pack_rows("2: Micropolitan", 13, 19) %>% 
+  pack_rows("3: Small/Rural Towns", 20, 25)
+```
+
+
+
+
