@@ -1,11 +1,15 @@
 ---
-title: "INN Audience Segment Dashboard"
+title: "Spiegel Audience Segment Dashboard"
 output:
   flexdashboard::flex_dashboard:
     orientation: columns
     theme:
       version: 4
       bootswatch: yeti
+      primary: "#4E2A84"
+    logo: "figs/medillspiegellogo-48-48.png"
+    navbar:
+      - { title: "About Spiegel", href: "https://spiegel.medill.northwestern.edu/", align: right}
 runtime: shiny
 ---
 
@@ -74,6 +78,10 @@ The segments are based on various set of demographic, socioeconomic status varia
 #             selected = "IL")
 selectInput("metroname", label = "Select a Metro Area", choices = metrolookup,
             selected = "Chicago-Naperville-Evanston, IL")
+```
+
+```{r, echo=FALSE, out.width="100%"}
+knitr::include_graphics("figs/SRClogo_original.png")
 ```
 
 Explore Market Segments
